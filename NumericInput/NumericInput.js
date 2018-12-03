@@ -14,19 +14,21 @@ export default class NumericInput extends Component {
             value: props.initValue,
             lastValid:props.initValue,
             stringValue: props.initValue.toString(),
+            initValue: props.initValue
         }
         this.ref = null
     }
-	
-	componentWillReceiveProps(props) {
-    if (props.initValue !== this.state.value) {
-      this.setState({
-        value: props.initValue,
-        lastValid: props.initValue,
-        stringValue: props.initValue.toString()
-      });
+    
+    componentWillReceiveProps(props) {
+        if (props.initValue !== this.state.initValue) {
+          this.setState({
+            value: props.initValue,
+            lastValid: props.initValue,
+            stringValue: props.initValue.toString()
+          })
+        }
     }
-  }
+
     updateBaseResolution = (width,height) => {
         calcSize = create({width,height})
     }
@@ -58,7 +60,7 @@ export default class NumericInput extends Component {
         }
         let realMatch = value && value.match(/-?\d+(\.(\d+)?)?/) && value.match(/-?\d+(\.(\d+)?)?/)[0] === value.match(/-?\d+(\.(\d+)?)?/).input,
             intMatch = value && value.match(/-?\d+/) && value.match(/-?\d+/)[0] === value.match(/-?\d+/).input,
-            legal = value === '' || (((this.props.valueType === 'real' && realMatch) || (this.props.valueType !== 'real' && intMatch)) && (this.props.maxValue === null || (parseFloat(value) <= this.props.maxValue)) && (this.props.minValue === null || (parseFloat(value) >= this.props.minValue)))
+            legal = value === '' || (((this.props.valueType === 'real' && realMatch) || (this.props.valueType !== 'real' && intMatch)) && (this.decimalPlaces(value) <= 2) && (this.props.maxValue === null || (parseFloat(value) <= this.props.maxValue)) && (this.props.minValue === null || (parseFloat(value) >= this.props.minValue)))
         if (!legal && !this.props.validateOnBlur) {
             if (this.ref) {
                 this.ref.blur()
@@ -77,7 +79,7 @@ export default class NumericInput extends Component {
         
         }else if(!legal && this.props.validateOnBlur){
             this.setState({stringValue:value})
-            let parsedValue = this.props.valueType === 'real' ? parseFloat(value) : parseInt(value)
+            let parsedValue = this.props.valueType === 'real' ? this.parseFloat(value) : parseInt(value)
             parsedValue = isNaN(parsedValue) ? 0 : parsedValue
                 if (parsedValue !== this.props.value)
                     this.props.onChange && this.props.onChange(parsedValue)
@@ -88,10 +90,10 @@ export default class NumericInput extends Component {
             parsedValue = isNaN(parsedValue) ? 0 : parsedValue
                 if (parsedValue !== this.props.value)
                     this.props.onChange && this.props.onChange(parsedValue)
-                this.setState({ value: parsedValue,legal,stringValue:parsedValue.toString() })
-         
+                this.setState({ value: parsedValue,legal,stringValue: value })         
         }
     }
+
     onBlur = () => {
         let match = this.state.stringValue.match(/-?[0-9]\d*(\.\d+)?/)
         let legal = match && match[0] === match.input && ((this.props.maxValue === null || (parseFloat(this.state.stringValue) <= this.props.maxValue)) && (this.props.minValue === null || (parseFloat(this.state.stringValue) >= this.props.minValue)))
@@ -140,7 +142,7 @@ export default class NumericInput extends Component {
             [style.inputContainerPlusMinus, { width: totalWidth, height: totalHeight, borderColor: borderColor }, this.props.rounded ? { borderRadius: borderRadiusTotal } : {}, this.props.containerStyle]
         const inputStyle = this.props.type === 'up-down' ?
             [style.inputUpDown, { width: inputWidth, height: totalHeight, fontSize: fontSize, color: textColor, borderRightWidth: 2, borderRightColor: borderColor }, this.props.inputStyle] :
-            [style.inputPlusMinus, { width: inputWidth, height: totalHeight, fontSize: fontSize, color: textColor, borderRightWidth: sepratorWidth, borderLeftWidth: sepratorWidth, borderLeftColor: borderColor, borderRightColor: borderColor }, this.props.inputStyle]
+            [style.inputPlusMinus, { width: inputWidth, height: totalHeight, fontSize: fontSize, color: textColor, borderRightWidth: sepratorWidth, borderLeftWidth: sepratorWidth, borderLeftColor: borderColor, borderRightColor: borderColor, borderTopWidth: sepratorWidth, borderTopColor: borderColor, borderBottomWidth: sepratorWidth, borderBottomColor: borderColor }, this.props.inputStyle]
         const upDownStyle = [{ alignItems: 'center', width: totalWidth - inputWidth, backgroundColor: this.props.upDownButtonsBackgroundColor, borderRightWidth: 1, borderRightColor: borderColor }, this.props.rounded ? { borderTopRightRadius: borderRadiusTotal, borderBottomRightRadius: borderRadiusTotal } : {}]
         const rightButtonStyle = [
             {
@@ -181,7 +183,9 @@ export default class NumericInput extends Component {
             borderLeftColor: borderColor,
             borderLeftWidth: sepratorWidth,
             borderRightWidth: sepratorWidth,
-            borderRightColor: borderColor
+            borderRightColor: borderColor,
+            
+            backgroundColor: 'white',
         }
         if (this.props.type === 'up-down')
             return (
@@ -210,6 +214,25 @@ export default class NumericInput extends Component {
             </View>)
 
 
+    }
+
+    decimalPlaces(num) {
+        var match = (''+num).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
+        if (!match) { return 0; }
+        return Math.max(
+             0,
+             // Number of digits right of decimal point.
+             (match[1] ? match[1].length : 0)
+             // Adjust for scientific notation.
+             - (match[2] ? +match[2] : 0));
+    }
+
+    parseFloat(value) {
+        if (this.decimalPlaces(value) > this.props.decimals) {
+            var stringValue = value + ''
+            return stringValue.slice(0, stringValue.indexOf('.') + 1 + this.props.decimals)
+        }
+        return parseFloat(value)
     }
 }
 
@@ -268,6 +291,7 @@ NumericInput.propTypes = {
     value: PropTypes.number,
     minValue: PropTypes.number,
     maxValue: PropTypes.number,
+    decimals: PropTypes.number,
     step: PropTypes.number,
     upDownButtonsBackgroundColor: PropTypes.string,
     rightButtonBackgroundColor: PropTypes.string,
@@ -294,6 +318,7 @@ NumericInput.defaultProps = {
     value: null,
     minValue: null,
     maxValue: null,
+    decimals: 2,
     step: 1,
     upDownButtonsBackgroundColor: 'white',
     rightButtonBackgroundColor: 'white',

@@ -1,6 +1,6 @@
 {
-  "name": "react-native-numeric-input",
-  "version": "1.6.3",
+  "name": "@micheltank/react-native-numeric-input",
+  "version": "1.6.7",
   "description": "a stylish numeric input for react native",
   "main": "index.js",
   "scripts": {
